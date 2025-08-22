@@ -1,0 +1,167 @@
+
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "IRON_HUB_UI"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.Parent = game:GetService("CoreGui")
+
+
+local Frame = Instance.new("Frame")
+Frame.Size = UDim2.new(0, 250, 0, 180)
+Frame.Position = UDim2.new(0.5, -125, 0.5, -90)
+Frame.BackgroundColor3 = Color3.fromRGB(30,30,30)
+Frame.BorderSizePixel = 0
+Frame.Parent = ScreenGui
+Frame.Active = true
+Frame.Draggable = true
+
+
+local TitleBar = Instance.new("Frame")
+TitleBar.Size = UDim2.new(1,0,0,30)
+TitleBar.Position = UDim2.new(0,0,0,0)
+TitleBar.BackgroundColor3 = Color3.fromRGB(50,50,50)
+TitleBar.Parent = Frame
+
+
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1,-60,1,0) 
+Title.Position = UDim2.new(0,0,0,0)
+Title.BackgroundTransparency = 1
+Title.Text = "IRON HUB"
+Title.TextColor3 = Color3.fromRGB(255,255,255)
+Title.TextScaled = true
+Title.Parent = TitleBar
+
+
+local CloseBtn = Instance.new("TextButton")
+CloseBtn.Size = UDim2.new(0,60,1,0)
+CloseBtn.Position = UDim2.new(1,-60,0,0)
+CloseBtn.BackgroundColor3 = Color3.fromRGB(200,50,50)
+CloseBtn.Text = "X"
+CloseBtn.TextColor3 = Color3.fromRGB(255,255,255)
+CloseBtn.Parent = TitleBar
+
+CloseBtn.MouseButton1Click:Connect(function()
+    ScreenGui:Destroy()
+end)
+
+
+local FOVEnabled = false
+local FOVRadius = 120
+local Smoothness = 0.1
+
+
+local AimToggle = Instance.new("TextButton")
+AimToggle.Size = UDim2.new(0,100,0,30)
+AimToggle.Position = UDim2.new(0,10,0,40)
+AimToggle.BackgroundColor3 = Color3.fromRGB(100,100,100)
+AimToggle.Text = "AimLock: OFF"
+AimToggle.TextColor3 = Color3.fromRGB(255,255,255)
+AimToggle.Parent = Frame
+
+AimToggle.MouseButton1Click:Connect(function()
+    FOVEnabled = not FOVEnabled
+    AimToggle.Text = FOVEnabled and "AimLock: ON" or "AimLock: OFF"
+end)
+
+
+local FOVLabel = Instance.new("TextLabel")
+FOVLabel.Size = UDim2.new(0,100,0,20)
+FOVLabel.Position = UDim2.new(0,10,0,80)
+FOVLabel.Text = "FOV: "..FOVRadius
+FOVLabel.TextColor3 = Color3.fromRGB(255,255,255)
+FOVLabel.BackgroundTransparency = 1
+FOVLabel.Parent = Frame
+
+local FOVSlider = Instance.new("TextButton")
+FOVSlider.Size = UDim2.new(0,200,0,20)
+FOVSlider.Position = UDim2.new(0,10,0,100)
+FOVSlider.BackgroundColor3 = Color3.fromRGB(120,120,120)
+FOVSlider.Text = ""
+FOVSlider.Parent = Frame
+
+local draggingFOV = false
+FOVSlider.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        draggingFOV = true
+    end
+end)
+FOVSlider.InputEnded:Connect(function(input)
+    draggingFOV = false
+end)
+FOVSlider.InputChanged:Connect(function(input)
+    if draggingFOV and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+        local pos = math.clamp(input.Position.X - FOVSlider.AbsolutePosition.X,0,FOVSlider.AbsoluteSize.X)
+        FOVRadius = math.floor((pos / FOVSlider.AbsoluteSize.X)*500)
+        FOVLabel.Text = "FOV: "..FOVRadius
+    end
+end)
+
+
+local SmoothLabel = Instance.new("TextLabel")
+SmoothLabel.Size = UDim2.new(0,100,0,20)
+SmoothLabel.Position = UDim2.new(0,10,0,130)
+SmoothLabel.Text = "Smooth: "..Smoothness
+SmoothLabel.TextColor3 = Color3.fromRGB(255,255,255)
+SmoothLabel.BackgroundTransparency = 1
+SmoothLabel.Parent = Frame
+
+local SmoothSlider = Instance.new("TextButton")
+SmoothSlider.Size = UDim2.new(0,200,0,20)
+SmoothSlider.Position = UDim2.new(0,10,0,150)
+SmoothSlider.BackgroundColor3 = Color3.fromRGB(120,120,120)
+SmoothSlider.Text = ""
+SmoothSlider.Parent = Frame
+
+local draggingSmooth = false
+SmoothSlider.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        draggingSmooth = true
+    end
+end)
+SmoothSlider.InputEnded:Connect(function(input)
+    draggingSmooth = false
+end)
+SmoothSlider.InputChanged:Connect(function(input)
+    if draggingSmooth and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+        local pos = math.clamp(input.Position.X - SmoothSlider.AbsolutePosition.X,0,SmoothSlider.AbsoluteSize.X)
+        Smoothness = math.floor((pos / SmoothSlider.AbsoluteSize.X)*100)/100
+        SmoothLabel.Text = "Smooth: "..Smoothness
+    end
+end)
+
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Camera = workspace.CurrentCamera
+local LocalPlayer = Players.LocalPlayer
+
+local function GetClosestEnemy()
+    local closestDist = FOVRadius
+    local target = nil
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("Head") then
+            if player.Team ~= LocalPlayer.Team then
+                local screenPos, onScreen = Camera:WorldToViewportPoint(player.Character.Head.Position)
+                if onScreen then
+                    local dist = (Vector2.new(screenPos.X, screenPos.Y) - Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)).Magnitude
+                    if dist < closestDist then
+                        closestDist = dist
+                        target = player.Character.Head
+                    end
+                end
+            end
+        end
+    end
+    return target
+end
+
+RunService.RenderStepped:Connect(function()
+    if FOVEnabled then
+        local target = GetClosestEnemy()
+        if target then
+            local direction = (target.Position - Camera.CFrame.Position).Unit
+            local targetCFrame = CFrame.new(Camera.CFrame.Position, Camera.CFrame.Position + direction)
+            Camera.CFrame = Camera.CFrame:Lerp(targetCFrame, Smoothness)
+        end
+    end
+end)
